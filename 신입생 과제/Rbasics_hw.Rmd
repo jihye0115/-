@@ -1,0 +1,199 @@
+---
+title: "대학원신입생과제_Rbasic"
+author: "예지혜 / 학번 212STG18"
+date: "2021년 2월 14일"
+output: html_document
+---
+
+##### 1. Final 점수가 midterm보다 작고, midterm 점수가 80 보다 큰 학생을 찾으시오.
+```{r}
+students <- c("Sean", "Louisa", "Frank", "Farhad", "Li")
+midterm <- c(80, 90, 93, 82, 95)
+final <- c(78, 84, 95, 82, 91) # Final exam scores
+names(midterm)<-students->names(final)
+# ans
+students[(final < midterm) & (midterm > 80)]
+```
+
+
+
+##### 2. subset 함수를 이용하여, survey에서 Program 값이 “PPM”이거나 “Other”이면서 Rexperience가 “Basic competence”인 경우, 변수 “OperatingSystem”, “TVhours”를 출력하시오.
+```{r}
+survey <- read.table("http://www.andrew.cmu.edu/user/achoulde/94842/data/survey_data.csv", header=TRUE, sep=",")
+# ans
+subset(survey, 
+       select = c("OperatingSystem", "TVhours"),  
+       subset = (Program == "PPM" | Program == "Other") & 
+         (Rexperience == "Basic competence")
+)
+```
+
+
+##### 3. Cars93 데이터에서 변수, AirBags과 Origin의 frequency table을 만드시오.
+```{r}
+library(MASS)
+data(Cars93)
+head(Cars93, 3)
+# ans
+table(Cars93$AirBags, Cars93$Origin)
+```
+
+
+##### 4. Cars93 데이터의 Origin과 Type의 horsepower mean table을 만드시오. [Hint: tapply() 함수 이용.]
+```{r}
+tapply(Cars93[["Horsepower"]], INDEX = Cars93[c("Origin", "Type")], FUN=mean)
+```
+
+
+##### 5. MASS 패키지에 있는 birthwt 데이터의 변수명을 다음과 같이 바꾸고 다음 문제를 푸시오.
+```{r}
+library(MASS)
+library(ggplot2)
+library(plyr)
+data(birthwt)
+colnames(birthwt) <- c("birthwt.below.2500", "mother.age", "mother.weight", 
+                       "race", "mother.smokes", "previous.prem.labor", "hypertension", "uterine.irr", 
+                       "physician.visits", "birthwt.grams")
+birthwt <- transform(birthwt, 
+                     race = as.factor(mapvalues(race, c(1, 2, 3), c("white","black", "other"))),
+                     mother.smokes = as.factor(mapvalues(mother.smokes, c(0,1), c("no", "yes"))),
+                     hypertension = as.factor(mapvalues(hypertension, c(0,1), c("no", "yes"))),
+                     uterine.irr = as.factor(mapvalues(uterine.irr, c(0,1), c("no", "yes"))),
+                     birthwt.below.2500 = as.factor(mapvalues(birthwt.below.2500, c(0,1), c("no", "yes")))
+)
+head(birthwt,3)
+```
+
+##### (1) aggregate() 함수를 이용하여 race와 mother.smokes의 각 경우(race 3가지* mother.smokes 2가지 = 6가지 경우)에 해당하는 birthwt.grams의 평균을 보여주는 data frame을 만드시오.
+```{r}
+aggregate(birthwt.grams ~ race + mother.smokes, FUN=mean, data=birthwt)
+```
+
+##### (2) ggplot을 이용하여 x축은 mother.age로 하고, y축은 birthwt.grams로 하여 plot을 만드시오. 각 관측치는 mothe.smokes를 색깔과 shape을 달리 구분하여 점으로 표시하시오.
+```{r}
+ggplot(birthwt, aes(x=mother.age, y=birthwt.grams, shape=mother.smokes, color=mother.smokes)) + 
+  geom_point() +
+  ylab("Birth Weight") +
+  xlab("Mother's Age")
+```
+
+
+##### 6. ggplot을 이용하여 Lecture6에 있는 plot 아무거나 하나만 그리고, 설명하시오.
+```{r}
+library(maps)
+arrests <- USArrests
+names(arrests) <- tolower(names(arrests))
+arrests$region <- tolower(rownames(USArrests))
+head(arrests)
+states <- map_data("state")
+head(states)
+choro <- merge(states, arrests, sort = FALSE, by = "region")
+choro <- choro[order(choro$order), ]
+head(choro)
+
+qplot(long, lat, data = choro, group = group, fill = murder, geom = "polygon") + scale_fill_gradient(low = "#56B1F7", high = "#132B43")
+```
+
+미국의 주별 살인사건 발생 건수에 대한 데이터 USArrests에 위치 데이터 states를 merge하여 지도그래프를 그렸다. geom = "polygon" 옵션을 통해 주별 경계의 위도, 경도 값을 이용해 다각형을 그렸고, 살인사건 발생 건수인 murder의 크기만큼 색칠하였다. 단, scale_fill_gradient() 명령을 통해 큰 값을 가질수록 진하게 색칠되도록 표현하였다.
+
+
+##### 7. t-test를 이용하여 mother.smokes의 두 집단간 birthwt.grams의 차이가 있는지 양측 검정하시오.
+```{r}
+birthwt.t.test <- t.test(birthwt.grams ~ mother.smokes, data = birthwt)
+birthwt.t.test
+```
+
+p-value가 0.05보다 작으므로 유의수준 0.05에서 귀무가설을 기각하며, 두 집단 간에 birthwt.grams의 차이가 있다.
+
+##### 8. mother.smokes가 no인 경우에 birthwt.grams 값에 대해서 normal 분포의 qqplot을 그리시오.
+```{r}
+with(birthwt, qqnorm(birthwt.grams[mother.smokes=="no"]))
+with(birthwt, qqline(birthwt.grams[mother.smokes=="no"], col = "blue"))
+```
+
+
+##### 9. 다음 crime 데이터에서 y를 crime.per.million로 하고, x는 exp.per.cap.1959와 unemp.youth를 제외한 모든 변수를 포함시켜 선형 회귀분석을 하시오.
+```{r}
+crime <- read.table("http://www.andrew.cmu.edu/user/achoulde/94842/data/crime_simple.txt", sep = "\t", header = TRUE)
+colnames(crime) <- c("crime.per.million", "young.males", "is.south", "average.ed",
+                     "exp.per.cap.1960", "exp.per.cap.1959", "labour.part",
+                     "male.per.fem", "population", "nonwhite",
+                     "unemp.youth", "unemp.adult", "median.assets", "num.low.salary")
+
+head(crime,3)
+# ans
+crime.lm <- lm(crime.per.million ~ .- exp.per.cap.1959 - unemp.youth, data = crime)
+summary(crime.lm)
+```
+
+
+##### 10. 9번의 회귀분석 summary를 R markdown에서 kable 함수를 이용하여 나타내시오.
+```{r}
+library(knitr)
+crime.lm.summary <- summary(crime.lm)
+kable(crime.lm.summary$coef, digits = c(3, 3, 3, 4), format = 'markdown')
+```
+
+
+##### 11. qgplot을 이용하여 Lecture11에 있는 plot 아무거나 하나만 그리고, 설명하시오.
+```{r}
+gapminder <- read.delim("http://www.andrew.cmu.edu/user/achoulde/94842/data/gapminder_five_year.txt")
+country.name <- "Ireland" 
+gapminder.sub <- subset(gapminder, country == country.name)
+qplot(year, lifeExp, data = gapminder.sub, main = paste("Life expectancy in", country.name))
+```
+
+각국의 연도별 기대수명과 gdp 정보가 포함된 데이터 gapminder에서 Ireland의 정보만을 추출해 연도별 기대수명 산점도를 그려보았다. 제목은 paste 함수를 사용해 country.name에 다른 나라명을 넣더라도 plot의 제목이 연동되어 수정될 수 있도록 설정하였다.
+
+
+##### 12. ggplot이나 qgplot을 이용하여 Lecture12에 있는 plot 아무거나 하나만 그리고, 설명하시오.
+```{r}
+year.min <- min(gapminder$year)
+getCoef <- function(df) {
+  coefs <- lm(lifeExp ~ I(year - year.min), data = df)$coef
+  names(coefs) <- c("intercept", "slope")
+  coefs
+}
+summary.coef <- ddply(gapminder, ~ country, getCoef)
+summary.continent <- ddply(gapminder, ~ country, summarize, continent = unique(continent))
+summary.merge <- merge(summary.coef, summary.continent, by = "country")
+summary.intercept <- transform(summary.merge, country = reorder(country, intercept))
+head(summary.intercept)
+```
+
+나라별 기대수명을 회귀분석하여 시각화해보았다. 회귀분석에서 slope과 coef를 가져오는 함수 getCoef를 정의한 후, 각 나라에 대해 ddply를 통해 적용시켰다. 이를 통해 각 나라의 회귀분석 결과와 대륙 정보를 가지는 summary.intercept라는 데이터셋을 생성하였다. 
+
+```{r}
+intercept.fig <- ggplot(data = summary.intercept, mapping = aes(x = country, y = intercept, fill = continent))
+intercept.fig + geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust = 1))
+```
+
+생성한 데이터를 가지고, coef을 막대 높이로 하는 bar chart를 그려보았다. 각 나라가 위치한 대륙에 따라 막대의 색깔을 다르게 하였고, x축의 텍스트가 매우 긴 관계로, 각도를 조절하여 식별할 수 있게 하였다.
+
+
+
+##### 13. dplyr 패키지의 piping을 이용하여 flights 데이터를 다음과 같은 순서로 manipulation하시오.
+
+- year, month, day를 그룹핑한다.
+- 변수 arr_delay, dep_delay를 선택한다.
+- year, month, day의 각 그룹에 대해서 arr_delay의 평균을 구하고 변수 이름을 mean_arr_delay 이라고 한다.
+- year, month, day의 각 그룹에 대해서 dep_delay의 평균을 구하고 변수 이름을 mean_dep_delay 이라고 한다.
+- mean_arr_delay > 30 이거나 mean_dep_delay > 30인 경우만 filtering 한다.
+```{r}
+library(ggplot2)
+library(dplyr)
+library(nycflights13)
+head(flights,3)
+
+# ans
+flights %>%
+  group_by(year, month, day) %>%
+  select(arr_delay, dep_delay) %>%
+  summarise(
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+    mean_dep_delay = mean(dep_delay, na.rm = TRUE)
+  ) %>%
+  filter(mean_arr_delay > 30 | mean_dep_delay > 30)
+```
+
